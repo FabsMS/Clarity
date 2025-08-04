@@ -7,15 +7,17 @@
     "vscode": "^1.100.0"
   },
   "categories": [
-    "Other"
+    "Documentation",
+    "Tools",
+    "Programming Languages"
   ],
   "activationEvents": [],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
       {
-        "command": "fabsms-clarity.helloWorld",
-        "title": "Gerar Documentação com Python"
+        "command": "fabsms-clarity.generateDocumentation",
+        "title": "Gerar Documentação com Clarity"
       }
     ]
   },

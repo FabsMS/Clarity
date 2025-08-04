@@ -8,7 +8,7 @@ file_path='src/extension.ts'
 # result = crew.generate_documentation(file_path)
 try:
     # Substitua "caminho/para/seu/arquivo.py" pelo arquivo real que você quer analisar
-    resultado = crew .generate_documentation(file_path)
+    resultado = crew. generate_documentation(file_path)
     print("Execução concluída com sucesso!")
     print(resultado)
 

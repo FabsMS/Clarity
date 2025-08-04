@@ -1,168 +1,149 @@
-
+# Importações padrão
+import os
 from crewai import Agent, Task, Crew, Process
-from functions import PythonAnalyzer, JavaScriptAnalyzer, JavaAnalyzer, MultiLanguageCodeAnalyzer, ReadmeGeneratorTool
-
+from functions import MultiLanguageCodeAnalyzer, ReadmeGeneratorTool
 from dotenv import load_dotenv
 
+# Carrega as variáveis do .env
 load_dotenv()
-#from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_community.chat_models.litellm import ChatLiteLLM
 
-# llm = ChatGoogleGenerativeAI(
-#     model="gemini/gemini-1.5-flash-latest",
-#     temperature=0.7,
-   
-# )
+# Importa LLM (Google Gemini via LiteLLM)
+from langchain_community.chat_models import ChatLiteLLM
+
+# Instancia o modelo Gemini com segurança
 llm = ChatLiteLLM(
     model="gemini/gemini-1.5-flash-latest",
     temperature=0.7,
-    api_key="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" ) 
-# Criação do agente
+    api_key=os.getenv("GEMINI_API_KEY") 
+)
+
+
 class Create_Crew:
     def __init__(self):
+        # Inicializa agentes e tarefas
         self.analyzer_agent = self.create_multi_language_analyzer_agent()
         self.writer_agent = self.create_readme_writer_agent()
-        
-        
-        self.analysis_task = self.create_analysis_task()
-        self.readme_task = self.create_readme_task()
-        
-        self.crew = self._create_crew()
+
+        self.analysis_task = None  # será criado dinamicamente
+        self.readme_task = None
+        self.crew = None
 
     def create_multi_language_analyzer_agent(self):
-        """Cria o agente analisador multilinguagem"""
-        
+        """Cria o agente responsável por analisar o código fonte"""
         analyzer_tool = MultiLanguageCodeAnalyzer()
-        
+
         return Agent(
             role="Analista de Código Multilinguagem",
-            goal="Analisar código em diferentes linguagens e extrair informações estruturadas",
-            backstory="""Você é um especialista em análise de código com conhecimento profundo 
-            em múltiplas linguagens de programação (Python, JavaScript, Java, TypeScript, etc.). 
-            Sua especialidade é extrair informações estruturadas de código fonte, identificando 
-            padrões, dependências, complexidade e arquitetura. Você adapta sua análise conforme 
-            as convenções e características específicas de cada linguagem.""",
+            goal="Analisar todos os arquivos de um projeto e extrair informações estruturadas",
+            backstory="""Você é um especialista em análise de código com domínio em várias linguagens.
+            Sua missão é gerar uma visão abrangente da estrutura e lógica do sistema analisado.""",
             tools=[analyzer_tool],
             verbose=True,
-            #emory=True,
             allow_delegation=False,
-            llm=llm  # Usando o LLM configurado
+            llm=llm
         )
-        
 
     def create_readme_writer_agent(self):
-        """Cria o agente redator de README"""
-        
+        """Cria o agente responsável por escrever o README"""
         readme_tool = ReadmeGeneratorTool()
-        
+
         return Agent(
             role="Redator de Documentação",
-            goal="Criar documentação README.md clara, completa e profissional baseada na análise de código",
-            backstory="""Você é um especialista em documentação técnica com vasta experiência 
-            em criar READMEs que são informativos, bem estruturados e fáceis de seguir. 
-            Você entende as necessidades de diferentes tipos de projetos e adapta a documentação 
-            conforme o contexto, linguagem e propósito do software. Sua documentação segue as 
-            melhores práticas da comunidade de desenvolvimento e é otimizada para facilitar 
-            a adoção e contribuição ao projeto.""",
+            goal="Gerar um README técnico, completo, claro e bem formatado",
+            backstory="""Você é um expert em documentação técnica. Sua missão é criar README.md 
+            de altíssima qualidade com base na análise profunda do sistema.""",
             tools=[readme_tool],
             verbose=True,
-            #memory=True,
             allow_delegation=False,
-            llm=llm  # Usando o LLM configurado
+            llm=llm
         )
-        
-        return agent
-      # Definir tarefa
-    def create_analysis_task(self):
+
+    def create_analysis_task(self, files: list):
+        """Cria a tarefa de análise de múltiplos arquivos"""
+        lista_formatada = '\n'.join(f"- `{path}`" for path in files)
+
         return Task(
-            description="""Analise o arquivo de código fornecido e extraia:
-            1. Linguagem de programação detectada
-            2. Estrutura geral (classes, funções, imports)
-            3. Namespace/package se aplicável
-            4. Ponto de entrada da aplicação
-            5. Dependências externas
-            6. Complexidade e propósito do código
-            7. Padrões arquiteturais identificados
-            
-            Adapte a análise conforme as convenções da linguagem detectada.""",
-            expected_output="Análise completa e estruturada do código com informações específicas da linguagem",
+            description=f"""
+            Analise todos os arquivos abaixo e extraia uma visão global do projeto:
+
+            **Arquivos para análise:**
+            {lista_formatada}
+
+            Para cada arquivo, extraia:
+            1. Linguagem utilizada
+            2. Classes, funções, objetos e hooks
+            3. Relações entre módulos/componentes
+            4. Arquivo(s) de entrada do sistema
+            5. Frameworks e bibliotecas utilizados
+            6. Padrões arquiteturais visíveis (ex: MVC, Hooks, Modular, Services)
+            7. Responsabilidades dos arquivos e pastas
+            8. Fluxo de dados e execução
+
+            Gere um relatório unificado que sirva como base para documentação.
+            """,
+            expected_output="Relatório técnico detalhado e estruturado com base nos arquivos analisados",
             agent=self.analyzer_agent
         )
-    def create_readme_task(self):
-        return Task(
 
-                description="""Com base na análise de código fornecida pela tarefa anterior, 
-                crie um README.md completo e profissional que inclua:
-                
-                1. **Cabeçalho**: Título atrativo e descrição clara do projeto
-                2. **Badges**: Apropriados para linguagem, framework e status do projeto
-                3. **Índice**: Navegação clara e organizada
-                4. **Instalação**: 
-                - Pré-requisitos específicos da linguagem/framework
-                - Comandos de instalação passo a passo
-                - Configuração inicial se necessária
-                5. **Uso**: 
-                - Exemplos práticos baseados no tipo de projeto identificado
-                - Comandos de execução específicos
-                - URLs de acesso (para APIs/webapps)
-                6. **API/Funcionalidades**: 
-                - Documentação das principais classes e funções
-                - Parâmetros, tipos de retorno e exemplos
-                7. **Estrutura**: Layout organizado do projeto
-                8. **Dependências**: Lista detalhada com propósito de cada uma
-                9. **Contribuição**: Guia para novos contribuidores
-                10. **Licença**: Informações de licenciamento
-                
-                **ADAPTE O CONTEÚDO** conforme o tipo de projeto:
-                - APIs: Inclua endpoints, exemplos de requests/responses
-                - Libraries: Foque em imports e uso das funções
-                - Applications: Destaque funcionalidades e como executar
-                - Scripts: Explique parâmetros e casos de uso
-                
-                **IMPORTANTE**: Use os dados EXATOS da análise anterior, não invente informações.""",
-                expected_output="""README.md completo em formato Markdown com:
-                - Conteúdo adaptado ao tipo específico de projeto
-                - Exemplos práticos baseados no código analisado
-                - Instruções precisas de instalação e uso
-                - Documentação técnica das funcionalidades principais""",
-                agent=self.writer_agent,
-                context=[self.analysis_task]  # Esta tarefa depende da análise
-            )
-        
-      
-    
+    def create_readme_task(self):
+        """Cria a tarefa de geração do README a partir da análise"""
+        return Task(
+            description="""
+            Com base na análise completa do sistema, gere um README.md profissional contendo:
+
+            1. **Título e descrição geral**
+            2. **Badges relevantes (linguagens, status)**
+            3. **Índice**
+            4. **Instalação e configuração**
+            5. **Como usar (com exemplos ou comandos)**
+            6. **Principais funcionalidades e componentes**
+            7. **Estrutura de pastas e módulos**
+            8. **Fluxo de execução ou arquitetura**
+            9. **Contribuição e testes**
+            10. **Licença**
+
+            Use Markdown corretamente e adapte o conteúdo conforme o tipo do projeto detectado.
+            Evite inventar qualquer dado: use apenas o que foi realmente analisado.
+            """,
+            expected_output="README.md em Markdown completo, técnico e claro",
+            agent=self.writer_agent,
+            context=[self.analysis_task]
+        )
+
     def _create_crew(self):
-        """Cria o crew com os agentes e tarefas"""
+        """Monta o Crew com as tarefas e agentes"""
         return Crew(
             agents=[self.analyzer_agent, self.writer_agent],
             tasks=[self.analysis_task, self.readme_task],
-            process=Process.sequential,  
+            process=Process.sequential,
             verbose=True,
-            #memory=True,
-            llm=llm  # Usando o LLM configurado
+            llm=llm
         )
-    
-    def generate_documentation(self, file_path: str) -> dict:
-        """Gera documentação completa para um arquivo"""
-        # Configurar o arquivo para análise
-        self.analysis_task.description += f"\n\n**ARQUIVO PARA ANÁLISE**: {file_path}"
-        
-        # Executar o crew
-        result = self.crew.kickoff()
-        
+
+    def generate_documentation(self, files: list) -> dict:
+        """Gatilho principal: gera documentação a partir de vários arquivos"""
+        self.analysis_task = self.create_analysis_task(files)
+        self.readme_task = self.create_readme_task()
+        self.crew = self._create_crew()
+
+        # Executa o crew
+        resultado = self.crew.kickoff()
+
+        # Verifica se o resultado é CrewOutput e extrai a saída Markdown
+        if hasattr(resultado, "output"):
+            readme_markdown = resultado.output
+        elif isinstance(resultado, dict):
+            readme_markdown = resultado.get("result") or str(resultado)
+        elif hasattr(resultado, "to_json"):
+            readme_markdown = resultado.to_json()
+        elif hasattr(resultado, "dict"):
+            readme_markdown = resultado.dict().get("result")
+        else:
+            readme_markdown = str(resultado)
+
         return {
             "status": "success",
-            "file_analyzed": file_path,
-            "result": result
+            "arquivos_analisados": files,
+            "output": readme_markdown 
         }
 
-    
-
-        
-        
-    # analyzer_tool = MultiLanguageCodeAnalyzer()
-
-
-    # # teste
-    # result = analyzer_tool._run("src/extension.ts")
-    # print(result)

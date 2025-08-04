@@ -9,9 +9,8 @@ from crewai import Agent, Task, Crew, Process
 from crewai.tools import BaseTool
 from pydantic import BaseModel, Field
 from typing import Dict, List, Any, Optional
-from pathlib import Path
-# Estruturas de dados genéricas
 
+# Estruturas de dados genéricas
 
 @dataclass
 class FunctionInfo:
@@ -439,107 +438,120 @@ class JavaAnalyzer(LanguageAnalyzer):
             return "Classe de domínio"
 
 # Ferramenta principal
+import json
+from pathlib import Path
+from crewai_tools import BaseTool
+
 class MultiLanguageCodeAnalyzer(BaseTool):
     name: str = "multi_language_code_analyzer"
-    description: str = "Analisa código em múltiplas linguagens (Python, JavaScript, Java, etc.)"
-    
-    def _run(self, file_path: str) -> Dict[str, Any]:
-        """Analisa um arquivo de código em qualquer linguagem suportada"""
+    description: str = "Analisa código em múltiplos arquivos e gera um resumo básico do projeto"
+
+    def run(self, input: str) -> str:
+        """
+        Método chamado pelo CrewAI. Recebe uma string com os paths, processa e retorna JSON como string.
+        """
         try:
-            # Inicializar analisadores aqui dentro do método
-            analyzers = [
-                PythonAnalyzer(),
-                JavaScriptAnalyzer(),
-                JavaAnalyzer()
+            file_paths = [
+                line.strip('- `').strip()
+                for line in input.strip().splitlines()
+                if line.strip()
             ]
-            
-            # Detectar linguagem por extensão
-            file_ext = Path(file_path).suffix.lower()
-            analyzer = self._get_analyzer_for_extension(file_ext, analyzers)
-            
-            if not analyzer:
-                return {"error": f"Linguagem não suportada para extensão {file_ext}"}
-            
-            # Ler arquivo
-            with open(file_path, 'r', encoding='utf-8') as file:
-                content = file.read()
-            
-            # Analisar
-            analysis = analyzer.analyze(content, file_path)
-            
-            # Converter para dict
-            return {
-                "filepath": analysis.filepath,
-                "language": analysis.language,
-                "package_namespace": analysis.package_namespace,
-                "entry_point": analysis.entry_point,
-                "imports": analysis.imports,
-                "functions": [self._function_to_dict(f) for f in analysis.functions],
-                "classes": [self._class_to_dict(c) for c in analysis.classes],
-                "dependencies": analysis.dependencies,
-                "main_purpose": analysis.main_purpose,
-                "complexity_score": analysis.complexity_score,
-                "total_lines": len(content.split('\n')),
-                "summary": self._generate_summary(analysis),
-                "supported_languages": [ext for analyzer in analyzers for ext in analyzer.get_file_extensions()]
-            }
-            
+            resultado = self._run(file_paths)
+            return json.dumps(resultado, indent=2, ensure_ascii=False)
         except Exception as e:
-            return {"error": f"Erro ao analisar {file_path}: {str(e)}"}
-    
-    def _get_analyzer_for_extension(self, extension: str, analyzers: List[LanguageAnalyzer]) -> Optional[LanguageAnalyzer]:
-        """Encontra o analisador apropriado para a extensão"""
+            return json.dumps({
+                "erro": "Erro ao analisar arquivos",
+                "mensagem": str(e)
+            }, indent=2, ensure_ascii=False)
+
+    def _run(self, file_paths: list) -> dict:
+        analises_individuais = []
+        linguagens_detectadas = set()
+        total_linhas = 0
+
+        for file_path in file_paths:
+            try:
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    conteudo = f.read()
+
+                ext = Path(file_path).suffix.lstrip('.').lower()
+                linhas = len(conteudo.splitlines())
+
+                linguagens_detectadas.add(ext)
+                total_linhas += linhas
+
+                analises_individuais.append({
+                    "arquivo": file_path,
+                    "linguagem": ext,
+                    "linhas": linhas
+                })
+
+            except Exception as e:
+                analises_individuais.append({
+                    "arquivo": file_path,
+                    "erro": str(e)
+                })
+
+        resumo = {
+            "linguagens": list(sorted(linguagens_detectadas)) or ["desconhecida"],
+            "quantidade_arquivos": len(file_paths),
+            "total_linhas": total_linhas,
+            "detalhes": analises_individuais,
+            "resumo": f"Foram analisados {len(file_paths)} arquivos com {total_linhas} linhas no total. Linguagens detectadas: {', '.join(sorted(linguagens_detectadas)) or 'nenhuma detectada'}."
+        }
+
+        return resumo
+
+    def run(self, input: str) -> str:
+        """
+        Método chamado pelo CrewAI. Recebe uma string com os paths, processa e retorna JSON como string.
+        """
+        try:
+            file_paths = [
+                line.strip('- `').strip()
+                for line in input.strip().splitlines()
+                if line.strip()
+            ]
+            resultado = self._run(file_paths)
+            return json.dumps(resultado, indent=2, ensure_ascii=False)
+        except Exception as e:
+            return json.dumps({
+                "erro": "Erro ao analisar arquivos",
+                "mensagem": str(e)
+            }, indent=2, ensure_ascii=False)
+
+    def _get_analyzer_for_extension(self, ext: str, analyzers: list):
         for analyzer in analyzers:
-            if extension in analyzer.get_file_extensions():
+            if ext in analyzer.extensions:
                 return analyzer
         return None
-    
-    def _function_to_dict(self, func: FunctionInfo) -> Dict[str, Any]:
-        return {
-            "name": func.name,
-            "docstring": func.docstring,
-            "parameters": func.parameters,
-            "return_type": func.return_type,
-            "visibility": func.visibility,
-            "complexity": func.complexity,
-            "line_number": func.line_number,
-            "annotations": func.annotations
-        }
-    
-    def _class_to_dict(self, cls: ClassInfo) -> Dict[str, Any]:
-        return {
-            "name": cls.name,
-            "docstring": cls.docstring,
-            "methods": [self._function_to_dict(m) for m in cls.methods],
-            "attributes": cls.attributes,
-            "inheritance": cls.inheritance,
-            "interfaces": cls.interfaces,
-            "visibility": cls.visibility,
-            "is_abstract": cls.is_abstract,
-            "line_number": cls.line_number
-        }
-    
-    def _generate_summary(self, analysis: FileAnalysis) -> str:
-        """Gera resumo da análise"""
-        parts = []
-        
-        if analysis.language:
-            parts.append(f"Arquivo {analysis.language}")
-        
-        if analysis.classes:
-            parts.append(f"{len(analysis.classes)} classe(s)")
-        
-        if analysis.functions:
-            parts.append(f"{len(analysis.functions)} função(ões)")
-        
-        if analysis.dependencies:
-            deps_str = ", ".join(analysis.dependencies[:3])
-            if len(analysis.dependencies) > 3:
-                deps_str += f" e mais {len(analysis.dependencies) - 3}"
-            parts.append(f"Dependências: {deps_str}")
-        
-        return ". ".join(parts) if parts else "Análise básica concluída"
 
+    def _function_to_dict(self, f):
+        return {
+            "name": getattr(f, "name", ""),
+            "params": getattr(f, "params", []),
+            "returns": getattr(f, "returns", ""),
+            "docstring": getattr(f, "docstring", "")
+        }
+
+    def _class_to_dict(self, c):
+        return {
+            "name": getattr(c, "name", ""),
+            "methods": [self._function_to_dict(m) for m in getattr(c, "methods", [])],
+            "docstring": getattr(c, "docstring", "")
+        }
+
+    def _resumir_proposito(self, analises):
+        descricoes = []
+        for a in analises:
+            if isinstance(a, dict):
+                continue
+            if hasattr(a, "purpose") and a.purpose:
+                descricoes.append(a.purpose)
+        return " | ".join(descricoes) if descricoes else "Propósito geral não identificado."
+
+    def _gerar_resumo_global(self, classes, funcoes, dependencias):
+        return f"O projeto possui {len(classes)} classes, {len(funcoes)} funções e depende de {len(dependencias)} bibliotecas externas."
 
 
 class ReadmeGeneratorTool(BaseTool):
