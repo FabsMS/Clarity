@@ -1,71 +1,81 @@
-# fabsms-clarity README
+# Clarity
 
-This is the README for your extension "fabsms-clarity". After writing up a brief description, we recommend including the following sections.
+**Clarity** é uma extensão para **Visual Studio Code** desenvolvida com o propósito de analisar o código-fonte de um projeto e gerar documentação clara e estruturada, como um `README.md` completo, diretamente dentro do editor.
 
-## Features
-
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
-
-For example if there is an image subfolder under your extension project workspace:
-
-\!\[feature X\]\(images/feature-x.png\)
-
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
-
-## Requirements
-
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
-
-## Extension Settings
-
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
-
-For example:
-
-This extension contributes the following settings:
-
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
-
-## Known Issues
-
-Calling out known issues can help limit users opening duplicate issues against your extension.
-
-## Release Notes
-
-Users appreciate release notes as you update your extension.
-
-### 1.0.0
-
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
+O objetivo é facilitar a compreensão do projeto, reduzir o tempo gasto com documentação manual e manter as informações sempre atualizadas.
 
 ---
 
-## Following extension guidelines
+## ✨ Como Funciona
 
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
+1.  **Análise de Código:** Identifica os pontos-chave do projeto, como funções, classes, dependências e a estrutura geral.
+2.  **Agente Inteligente:** Utiliza um agente em Python para processar e interpretar o código-fonte.
+3.  **Geração de Documentação:** Emprega um segundo agente para redigir um `README.md` com base nas informações coletadas.
+4.  **Integração com VS Code:** Permite executar a análise e gerar a documentação com poucos cliques ou atalhos.
+5.  **Suporte a Linguagens:** Foco inicial em projetos **JavaScript/TypeScript/Python/Java**, com uma arquitetura expansível para outras linguagens.
 
-* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
+---
 
-## Working with Markdown
+## 🛠️ Tecnologias Utilizadas
 
-You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
+* **Python:** Responsável pela lógica de análise do código e geração de conteúdo.
+* **TypeScript/JavaScript (Node.js):** Implementa a interface da extensão e a integração com o VS Code.
+* **APIs do Visual Studio Code:** Utilizadas para manipular o ambiente e interagir com os arquivos do usuário.
 
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
+---
 
-## For more information
+## 📋 Requisitos
 
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
+Antes de começar, garanta que você possui:
 
-**Enjoy!**
+* **[Python](https://www.python.org/downloads/)** instalado.
+* **[Node.js](https://nodejs.org/en/)** (versão LTS recomendada).
+* **[Visual Studio Code](https://code.visualstudio.com/)** instalado.
+
+---
+
+## 🚀 Como Rodar a Extensão
+
+1.  **Clone o repositório:**
+    ```bash
+    git clone [https://github.com/FabsMS/Clarity.git](https://github.com/FabsMS/Clarity.git)
+    cd Clarity
+    ```
+
+2.  **Instale as dependências:**
+    ```bash
+    npm install
+    ```
+
+3.  **Execute em modo de desenvolvimento:**
+    * Abra o projeto no **Visual Studio Code**.
+    * Pressione `F5` para abrir uma nova janela do VS Code com a extensão **Clarity** ativa.
+    * Na nova janela, use o atalho `Ctrl+Shift+P` (ou `Cmd+Shift+P` no macOS), procure por **"Gerar Documentação com Clarity"** e execute o comando.
+
+---
+
+## 📂 Estrutura do Repositório
+
+```text
+Clarity/
+├── .vscode/                   # Configurações e scripts de desenvolvimento da extensão
+├── python/                    # Código do agente de análise em Python
+├── src/                       # Código-fonte da extensão (TypeScript/JavaScript)
+├── .gitignore                 # Arquivos e diretórios ignorados pelo Git
+├── CHANGELOG.md               # Registro de alterações
+├── package.json               # Configurações do Node.js e dependências
+├── README.md                  # Este arquivo
+├── tsconfig.json              # Configuração do compilador TypeScript
+└── vsc-extension-quickstart.md # Guia rápido do VS Code
+
+---
+
+## 📜 Resumo Rápido
+
+| Item         | Descrição                                                       |
+| :----------- | :-------------------------------------------------------------- |
+| **Projeto** | Extensão para VS Code para geração automatizada de documentação |
+| **Frontend** | VS Code com TypeScript/JavaScript (`src/`)                      |
+| **Backend** | Agente em Python (`python/`)                                    |
+| **Requisitos** | Python + Node.js                                                |
+| **Execução** | `npm install` → Abrir no VS Code → Pressionar `F5`                |
