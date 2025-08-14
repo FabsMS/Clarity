@@ -67,7 +67,7 @@ Clarity/
 ├── README.md                  # Este arquivo
 ├── tsconfig.json              # Configuração do compilador TypeScript
 └── vsc-extension-quickstart.md # Guia rápido do VS Code
-
+```
 ---
 
 ## 📜 Resumo Rápido
